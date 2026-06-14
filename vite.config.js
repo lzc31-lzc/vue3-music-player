@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // 加上这一行！这里必须和你的仓库名完全一致
+  base: '/vue3-music-player/',
   plugins: [
     vue({
       template: {
