@@ -1,10 +1,10 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
-const Home = () => import('../views/Home.vue')
-const SongList = () => import('../views/SongList.vue')
-const Play = () => import('../views/Play.vue')
-const Mine = () => import('../views/Mine.vue')
-const NotFound = () => import('../views/NotFound.vue')
+import Home from '../views/Home.vue'
+import SongList from '../views/SongList.vue'
+import Play from '../views/Play.vue'
+import Mine from '../views/Mine.vue'
+import NotFound from '../views/NotFound.vue'
 
 const routes = [
   {
@@ -39,7 +39,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes
 })
 
