@@ -1,0 +1,112 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  color: #1f2937;
+  background: #f6f7fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 30%),
+    radial-gradient(circle at top right, rgba(236, 72, 153, 0.12), transparent 28%),
+    #f6f7fb;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.van-nav-bar {
+  background: rgba(255, 255, 255, 0.86) !important;
+  backdrop-filter: blur(14px);
+}
+
+.van-nav-bar__title {
+  font-weight: 700 !important;
+}
+
+.van-search {
+  background: transparent !important;
+}
+
+.van-search__content {
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.van-cell-group {
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.van-tabbar {
+  height: 58px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.van-tabbar-item--active {
+  font-weight: 700;
+}
+html.dark {
+  background: #0f172a;
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.22), transparent 30%),
+    radial-gradient(circle at top right, rgba(236, 72, 153, 0.18), transparent 28%),
+    #0f172a;
+  color: #e5e7eb;
+}
+
+html.dark .app {
+  background: #0f172a;
+}
+
+html.dark .van-nav-bar,
+html.dark .van-tabbar,
+html.dark .van-cell,
+html.dark .van-cell-group {
+  background: rgba(15, 23, 42, 0.9) !important;
+  color: #e5e7eb !important;
+}
+
+html.dark .van-nav-bar__title,
+html.dark .van-cell__title {
+  color: #f9fafb !important;
+}
+
+html.dark .van-cell__label {
+  color: #94a3b8 !important;
+}
+
+html.dark .van-search__content {
+  background: rgba(30, 41, 59, 0.95) !important;
+}
+
+html.dark .van-field__control {
+  color: #f9fafb !important;
+}
+
+html.dark .van-tabbar-item {
+  color: #94a3b8 !important;
+}
+
+html.dark .van-tabbar-item--active {
+  color: #8b5cf6 !important;
+}
+.register-btn {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24) !important;
+  color: #111827 !important;
+  border: none !important;
+  font-weight: 700;
+}
