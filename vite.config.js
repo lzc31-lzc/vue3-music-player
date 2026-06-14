@@ -3,20 +3,25 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // 加上这一行！这里必须和你的仓库名完全一致
+  // GitHub 仓库名
   base: '/vue3-music-player/',
+
+  // 打包输出到 docs 目录，方便 GitHub Pages 部署
+  build: {
+    outDir: 'docs'
+  },
+
   plugins: [
     vue({
       template: {
         compilerOptions: {
-          // 忽略 VS Code 的标签闭合检查警告
           preserveWhitespace: false
         }
       }
     })
   ],
+
   server: {
-    // 关闭浏览器上的错误弹窗
     hmr: {
       overlay: false
     }
