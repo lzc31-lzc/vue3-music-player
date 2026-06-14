@@ -4,29 +4,45 @@
       <div class="header-bg"></div>
 
       <div class="user-card">
-        <img class="avatar" :src="user.avatar" />
+        <img class="avatar" :src="isLogin ? user.avatar : defaultAvatar" />
 
         <div class="user-info">
-          <h2>{{ user.nickname }}</h2>
-          <p>{{ user.desc }}</p>
+          <h2>{{ isLogin ? user.nickname : '未登录用户' }}</h2>
+          <p>{{ isLogin ? user.desc : '登录后体验完整音乐功能' }}</p>
         </div>
 
-        <van-button round size="small" class="edit-btn" @click="editUser">
+        <van-button
+          v-if="!isLogin"
+          round
+          size="small"
+          class="login-btn"
+          @click="showLogin = true"
+        >
+          登录
+        </van-button>
+
+        <van-button
+          v-else
+          round
+          size="small"
+          class="edit-btn"
+          @click="editUser"
+        >
           编辑
         </van-button>
       </div>
 
       <div class="stats-card">
         <div class="stat-item">
-          <strong>{{ user.favoriteCount }}</strong>
+          <strong>{{ isLogin ? user.favoriteCount : 0 }}</strong>
           <span>收藏</span>
         </div>
         <div class="stat-item">
-          <strong>{{ user.historyCount }}</strong>
+          <strong>{{ isLogin ? user.historyCount : 0 }}</strong>
           <span>播放</span>
         </div>
         <div class="stat-item">
-          <strong>{{ user.playlistCount }}</strong>
+          <strong>{{ isLogin ? user.playlistCount : 0 }}</strong>
           <span>歌单</span>
         </div>
       </div>
@@ -49,28 +65,9 @@
     <section class="mine-panel">
       <div class="panel-title">我的音乐</div>
 
-      <van-cell
-        title="我的收藏"
-        label="喜欢的歌曲都在这里"
-        icon="like-o"
-        is-link
-        @click="goFavorite"
-      />
-
-      <van-cell
-        title="播放历史"
-        label="查看最近播放记录"
-        icon="clock-o"
-        is-link
-        @click="goHistory"
-      />
-
-      <van-cell
-        title="我的歌单"
-        label="管理创建和收藏的歌单"
-        icon="music-o"
-        is-link
-      />
+      <van-cell title="我的收藏" label="喜欢的歌曲都在这里" icon="like-o" is-link @click="needLogin('我的收藏')" />
+      <van-cell title="播放历史" label="查看最近播放记录" icon="clock-o" is-link @click="needLogin('播放历史')" />
+      <van-cell title="我的歌单" label="管理创建和收藏的歌单" icon="music-o" is-link @click="needLogin('我的歌单')" />
     </section>
 
     <section class="mine-panel">
@@ -82,37 +79,54 @@
         </template>
       </van-cell>
 
-      <van-cell
-        title="清除缓存"
-        label="清理本地播放缓存"
-        icon="delete-o"
-        is-link
-        @click="clearCache"
-      />
-
-      <van-cell
-        title="关于项目"
-        label="Vue3 + Vite 音乐播放器"
-        icon="info-o"
-        is-link
-        @click="showAbout"
-      />
+      <van-cell title="清除缓存" label="清理本地播放缓存" icon="delete-o" is-link @click="clearCache" />
+      <van-cell title="关于项目" label="Vue3 + Vite 音乐播放器" icon="info-o" is-link @click="showAbout" />
     </section>
 
-    <section class="mine-panel danger-panel">
-      <van-cell
-        title="退出登录"
-        icon="close"
-        is-link
-        @click="logout"
-      />
+    <section v-if="isLogin" class="mine-panel danger-panel">
+      <van-cell title="退出登录" icon="close" is-link @click="logout" />
     </section>
+
+    <van-popup v-model:show="showLogin" round position="bottom">
+      <div class="auth-box">
+        <h2>{{ authMode === 'login' ? '欢迎登录' : '创建账号' }}</h2>
+        <p>{{ authMode === 'login' ? '登录后同步你的音乐偏好' : '注册一个新的音乐账号' }}</p>
+
+        <van-field v-model="form.username" label="账号" placeholder="请输入账号" />
+        <van-field v-model="form.password" label="密码" type="password" placeholder="请输入密码" />
+
+        <van-field
+          v-if="authMode === 'register'"
+          v-model="form.nickname"
+          label="昵称"
+          placeholder="请输入昵称"
+        />
+
+        <van-button block round class="auth-submit" @click="submitAuth">
+          {{ authMode === 'login' ? '登录' : '注册' }}
+        </van-button>
+
+        <div class="auth-switch">
+          <span v-if="authMode === 'login'">
+            没有账号？
+            <b @click="authMode = 'register'">去注册</b>
+          </span>
+
+          <span v-else>
+            已有账号？
+            <b @click="authMode = 'login'">去登录</b>
+          </span>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
+
+const defaultAvatar = 'https://picsum.photos/200/200?random=66'
 
 const user = ref({
   nickname: '白鹿',
@@ -123,28 +137,34 @@ const user = ref({
   playlistCount: 12
 })
 
+const isLogin = ref(false)
+const showLogin = ref(false)
+const authMode = ref('login')
 const darkMode = ref(false)
 
+const form = ref({
+  username: '',
+  password: '',
+  nickname: ''
+})
+
 const quickList = ref([
-  { title: '收藏', icon: 'like-o', type: 'favorite' },
-  { title: '历史', icon: 'clock-o', type: 'history' },
-  { title: '下载', icon: 'down', type: 'download' },
-  { title: '歌单', icon: 'music-o', type: 'playlist' }
+  { title: '收藏', icon: 'like-o' },
+  { title: '历史', icon: 'clock-o' },
+  { title: '下载', icon: 'down' },
+  { title: '歌单', icon: 'music-o' }
 ])
 
 onMounted(() => {
-  const localUser = localStorage.getItem('music_user')
+  const loginUser = localStorage.getItem('music_login_user')
   const localTheme = localStorage.getItem('music_theme')
 
-  if (localUser) {
-    try {
-      user.value = {
-        ...user.value,
-        ...JSON.parse(localUser)
-      }
-    } catch (error) {
-      console.log(error)
+  if (loginUser) {
+    user.value = {
+      ...user.value,
+      ...JSON.parse(loginUser)
     }
+    isLogin.value = true
   }
 
   if (localTheme === 'dark') {
@@ -154,29 +174,86 @@ onMounted(() => {
 })
 
 watch(darkMode, (value) => {
-  if (value) {
-    document.documentElement.classList.add('dark')
-    localStorage.setItem('music_theme', 'dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-    localStorage.setItem('music_theme', 'light')
-  }
+  document.documentElement.classList.toggle('dark', value)
+  localStorage.setItem('music_theme', value ? 'dark' : 'light')
 })
 
-const editUser = () => {
-  showToast('编辑资料功能开发中')
+const submitAuth = () => {
+  if (!form.value.username || !form.value.password) {
+    showToast('请输入账号和密码')
+    return
+  }
+
+  if (authMode.value === 'register') {
+    if (!form.value.nickname) {
+      showToast('请输入昵称')
+      return
+    }
+
+    const newUser = {
+      username: form.value.username,
+      password: form.value.password,
+      nickname: form.value.nickname,
+      desc: '这个人很喜欢音乐',
+      avatar: 'https://picsum.photos/200/200?random=99',
+      favoriteCount: 0,
+      historyCount: 0,
+      playlistCount: 0
+    }
+
+    localStorage.setItem('music_account', JSON.stringify(newUser))
+    localStorage.setItem('music_login_user', JSON.stringify(newUser))
+
+    user.value = {
+      ...user.value,
+      ...newUser
+    }
+
+    isLogin.value = true
+    showLogin.value = false
+    showToast('注册成功')
+    return
+  }
+
+  const account = JSON.parse(localStorage.getItem('music_account') || 'null')
+
+  if (!account) {
+    showToast('账号不存在，请先注册')
+    return
+  }
+
+  if (account.username !== form.value.username || account.password !== form.value.password) {
+    showToast('账号或密码错误')
+    return
+  }
+
+  localStorage.setItem('music_login_user', JSON.stringify(account))
+  user.value = {
+    ...user.value,
+    ...account
+  }
+
+  isLogin.value = true
+  showLogin.value = false
+  showToast('登录成功')
+}
+
+const needLogin = (text) => {
+  if (!isLogin.value) {
+    showToast('请先登录')
+    showLogin.value = true
+    return
+  }
+
+  showToast(text)
 }
 
 const handleQuick = (item) => {
-  showToast(item.title)
+  needLogin(item.title)
 }
 
-const goFavorite = () => {
-  showToast('我的收藏')
-}
-
-const goHistory = () => {
-  showToast('播放历史')
+const editUser = () => {
+  showToast('编辑资料功能开发中')
 }
 
 const clearCache = () => {
@@ -195,11 +272,10 @@ const logout = async () => {
       message: '确定要退出当前账号吗？'
     })
 
-    localStorage.removeItem('music_user')
+    localStorage.removeItem('music_login_user')
+    isLogin.value = false
     showToast('已退出登录')
-  } catch (error) {
-    console.log('取消退出')
-  }
+  } catch (error) {}
 }
 </script>
 
@@ -240,7 +316,6 @@ const logout = async () => {
   color: #fff;
   background: rgba(255, 255, 255, 0.16);
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   border: 1px solid rgba(255, 255, 255, 0.28);
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16);
 }
@@ -270,7 +345,9 @@ const logout = async () => {
   opacity: 0.86;
 }
 
-.edit-btn {
+.edit-btn,
+.login-btn,
+.auth-submit {
   border: none;
   color: #fff;
   font-weight: 700;
@@ -288,7 +365,6 @@ const logout = async () => {
   text-align: center;
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
 }
 
@@ -325,7 +401,6 @@ const logout = async () => {
   gap: 9px;
   background: rgba(255, 255, 255, 0.86);
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
-  transition: all 0.25s ease;
 }
 
 .quick-card:active {
@@ -355,7 +430,6 @@ const logout = async () => {
   overflow: hidden;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 16px 42px rgba(15, 23, 42, 0.06);
 }
 
@@ -381,6 +455,37 @@ const logout = async () => {
 
 .danger-panel :deep(.van-cell__title) {
   color: #ef4444;
+}
+
+.auth-box {
+  padding: 26px 20px 30px;
+}
+
+.auth-box h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.auth-box p {
+  margin: 8px 0 20px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.auth-submit {
+  margin-top: 18px;
+}
+
+.auth-switch {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.auth-switch b {
+  color: #2563eb;
 }
 
 :global(html.dark) .mine-page {
