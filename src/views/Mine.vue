@@ -1,408 +1,413 @@
 <template>
-  <div class="mine">
-    <van-nav-bar title="个人中心" />
+  <div class="page mine-page">
+    <section class="mine-header">
+      <div class="header-bg"></div>
 
-    <div class="user-card">
-      <template v-if="auth.isLogin">
-        <img class="avatar" :src="auth.userInfo.avatar" />
-        <div class="username">{{ auth.userInfo.username }}</div>
-        <div class="desc">{{ auth.userInfo.desc }}</div>
+      <div class="user-card">
+        <img class="avatar" :src="user.avatar" />
 
-        <van-button
-          class="logout-btn"
-          size="small"
-          round
-          @click="logout"
-        >
-          退出登录
-        </van-button>
-      </template>
-
-      <template v-else>
-        <div class="login-title">欢迎来到音乐世界</div>
-        <div class="desc">登录后可同步收藏和播放历史</div>
-
-        <div class="login-actions">
-          <van-button round color="linear-gradient(135deg,#8b5cf6,#ec4899)" @click="openLogin">
-            登录
-          </van-button>
-          <van-button round    color="linear-gradient(135deg,#f59e0b,#fbbf24)" @click="openRegister">
-            注册
-          </van-button>
+        <div class="user-info">
+          <h2>{{ user.nickname }}</h2>
+          <p>{{ user.desc }}</p>
         </div>
-      </template>
-    </div>
 
-    <div class="stats">
-      <div>
-        <strong>{{ player.favoriteList.length }}</strong>
-        <span>收藏</span>
+        <van-button round size="small" class="edit-btn" @click="editUser">
+          编辑
+        </van-button>
       </div>
-      <div>
-        <strong>{{ player.historyList.length }}</strong>
-        <span>历史</span>
-      </div>
-      <div>
-        <strong>{{ player.songList.length }}</strong>
-        <span>歌曲</span>
-      </div>
-    </div>
 
-    <div class="section-title">设置</div>
+      <div class="stats-card">
+        <div class="stat-item">
+          <strong>{{ user.favoriteCount }}</strong>
+          <span>收藏</span>
+        </div>
+        <div class="stat-item">
+          <strong>{{ user.historyCount }}</strong>
+          <span>播放</span>
+        </div>
+        <div class="stat-item">
+          <strong>{{ user.playlistCount }}</strong>
+          <span>歌单</span>
+        </div>
+      </div>
+    </section>
 
-    <van-cell-group inset>
-      <van-cell title="深色模式" icon="setting-o">
+    <section class="quick-grid">
+      <div
+        v-for="item in quickList"
+        :key="item.title"
+        class="quick-card"
+        @click="handleQuick(item)"
+      >
+        <div class="quick-icon">
+          <van-icon :name="item.icon" size="24" />
+        </div>
+        <span>{{ item.title }}</span>
+      </div>
+    </section>
+
+    <section class="mine-panel">
+      <div class="panel-title">我的音乐</div>
+
+      <van-cell
+        title="我的收藏"
+        label="喜欢的歌曲都在这里"
+        icon="like-o"
+        is-link
+        @click="goFavorite"
+      />
+
+      <van-cell
+        title="播放历史"
+        label="查看最近播放记录"
+        icon="clock-o"
+        is-link
+        @click="goHistory"
+      />
+
+      <van-cell
+        title="我的歌单"
+        label="管理创建和收藏的歌单"
+        icon="music-o"
+        is-link
+      />
+    </section>
+
+    <section class="mine-panel">
+      <div class="panel-title">系统设置</div>
+
+      <van-cell title="深色模式" label="切换应用主题" icon="bulb-o">
         <template #right-icon>
-          <van-switch
-            v-model="theme.isDark"
-            size="22px"
-            @change="theme.initTheme"
-          />
+          <van-switch v-model="darkMode" size="22px" />
         </template>
       </van-cell>
-    </van-cell-group>
 
-    <div class="section-header">
-      <span>我的收藏</span>
-      <van-button
-        v-if="player.favoriteList.length"
-        size="small"
-        type="danger"
-        plain
-        round
-        @click="clearFavorite"
-      >
-        清空
-      </van-button>
-    </div>
+      <van-cell
+        title="清除缓存"
+        label="清理本地播放缓存"
+        icon="delete-o"
+        is-link
+        @click="clearCache"
+      />
 
-    <van-cell-group inset>
-      <template v-if="player.favoriteList.length">
-        <van-cell
-          v-for="song in player.favoriteList"
-          :key="song.id"
-          :title="song.name"
-          :label="song.singer"
-          icon="like-o"
-          is-link
-          @click="playSong(song)"
-        />
-      </template>
+      <van-cell
+        title="关于项目"
+        label="Vue3 + Vite 音乐播放器"
+        icon="info-o"
+        is-link
+        @click="showAbout"
+      />
+    </section>
 
-      <van-empty v-else description="还没有收藏歌曲" />
-    </van-cell-group>
-
-    <div class="section-header">
-      <span>播放历史</span>
-      <van-button
-        v-if="player.historyList.length"
-        size="small"
-        type="danger"
-        plain
-        round
-        @click="clearHistory"
-      >
-        清空
-      </van-button>
-    </div>
-
-    <van-cell-group inset>
-      <template v-if="player.historyList.length">
-        <van-cell
-          v-for="song in player.historyList"
-          :key="song.id"
-          :title="song.name"
-          :label="song.singer"
-          icon="clock-o"
-          is-link
-          @click="playSong(song)"
-        />
-      </template>
-
-      <van-empty v-else description="暂无播放历史" />
-    </van-cell-group>
-
-    <van-popup
-      v-model:show="showAuth"
-      round
-      position="bottom"
-      :style="{ padding: '24px 20px' }"
-    >
-      <div class="auth-box">
-        <div class="auth-title">
-          {{ authType === 'login' ? '用户登录' : '用户注册' }}
-        </div>
-
-        <van-field
-          v-model="form.username"
-          label="用户名"
-          placeholder="请输入用户名"
-          left-icon="user-o"
-        />
-
-        <van-field
-          v-model="form.password"
-          label="密码"
-          type="password"
-          placeholder="请输入密码"
-          left-icon="lock"
-        />
-
-        <van-button
-          block
-          round
-          color="linear-gradient(135deg,#8b5cf6,#ec4899)"
-          class="auth-submit"
-          @click="submitAuth"
-        >
-          {{ authType === 'login' ? '登录' : '注册' }}
-        </van-button>
-
-        <div class="auth-switch" @click="toggleAuthType">
-          {{ authType === 'login' ? '没有账号？去注册' : '已有账号？去登录' }}
-        </div>
-      </div>
-    </van-popup>
+    <section class="mine-panel danger-panel">
+      <van-cell
+        title="退出登录"
+        icon="close"
+        is-link
+        @click="logout"
+      />
+    </section>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { showConfirmDialog, showToast } from 'vant'
+import { ref, watch, onMounted } from 'vue'
+import { showToast, showConfirmDialog } from 'vant'
 
-import { usePlayerStore } from '../store/Player'
-import { useThemeStore } from '../store/Theme'
-import { useAuthStore } from '../store/Auth'
-
-const router = useRouter()
-
-const player = usePlayerStore()
-const theme = useThemeStore()
-const auth = useAuthStore()
-
-const showAuth = ref(false)
-const authType = ref('login')
-
-const form = reactive({
-  username: '',
-  password: ''
+const user = ref({
+  nickname: '白鹿',
+  desc: '热爱音乐，也热爱前端开发',
+  avatar: 'https://picsum.photos/200/200?random=88',
+  favoriteCount: 36,
+  historyCount: 128,
+  playlistCount: 12
 })
 
-const resetForm = () => {
-  form.username = ''
-  form.password = ''
-}
+const darkMode = ref(false)
 
-const openLogin = () => {
-  authType.value = 'login'
-  resetForm()
-  showAuth.value = true
-}
+const quickList = ref([
+  { title: '收藏', icon: 'like-o', type: 'favorite' },
+  { title: '历史', icon: 'clock-o', type: 'history' },
+  { title: '下载', icon: 'down', type: 'download' },
+  { title: '歌单', icon: 'music-o', type: 'playlist' }
+])
 
-const openRegister = () => {
-  authType.value = 'register'
-  resetForm()
-  showAuth.value = true
-}
+onMounted(() => {
+  const localUser = localStorage.getItem('music_user')
+  const localTheme = localStorage.getItem('music_theme')
 
-const toggleAuthType = () => {
-  authType.value = authType.value === 'login' ? 'register' : 'login'
-  resetForm()
-}
-
-const submitAuth = () => {
-  if (!form.username || !form.password) {
-    showToast('请输入用户名和密码')
-    return
+  if (localUser) {
+    try {
+      user.value = {
+        ...user.value,
+        ...JSON.parse(localUser)
+      }
+    } catch (error) {
+      console.log(error)
+    }
   }
 
-  const success =
-    authType.value === 'login'
-      ? auth.login(form.username, form.password)
-      : auth.register(form.username, form.password)
-
-  if (success) {
-    showToast(authType.value === 'login' ? '登录成功' : '注册成功')
-    showAuth.value = false
+  if (localTheme === 'dark') {
+    darkMode.value = true
+    document.documentElement.classList.add('dark')
   }
+})
+
+watch(darkMode, (value) => {
+  if (value) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('music_theme', 'dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('music_theme', 'light')
+  }
+})
+
+const editUser = () => {
+  showToast('编辑资料功能开发中')
+}
+
+const handleQuick = (item) => {
+  showToast(item.title)
+}
+
+const goFavorite = () => {
+  showToast('我的收藏')
+}
+
+const goHistory = () => {
+  showToast('播放历史')
+}
+
+const clearCache = () => {
+  localStorage.removeItem('music_play_history')
+  showToast('缓存已清除')
+}
+
+const showAbout = () => {
+  showToast('Vue3 音乐播放器项目')
 }
 
 const logout = async () => {
   try {
     await showConfirmDialog({
-      title: '退出登录',
+      title: '确认退出',
       message: '确定要退出当前账号吗？'
     })
 
-    auth.logout()
+    localStorage.removeItem('music_user')
     showToast('已退出登录')
-  } catch {}
-}
-
-const playSong = (song) => {
-  player.setCurrentSong(song)
-  player.pause()
-  router.push('/play')
-}
-
-const clearFavorite = async () => {
-  try {
-    await showConfirmDialog({
-      title: '提示',
-      message: '确定清空所有收藏歌曲吗？'
-    })
-
-    player.clearFavorite()
-    showToast('收藏已清空')
-  } catch {}
-}
-
-const clearHistory = async () => {
-  try {
-    await showConfirmDialog({
-      title: '提示',
-      message: '确定清空播放历史吗？'
-    })
-
-    player.clearHistory()
-    showToast('历史已清空')
-  } catch {}
+  } catch (error) {
+    console.log('取消退出')
+  }
 }
 </script>
 
 <style scoped>
-.mine {
+.mine-page {
   min-height: 100vh;
-  padding-bottom: 130px;
+  padding: 0 14px 88px;
   background:
-    radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.18), transparent 28%),
-    radial-gradient(circle at 90% 0%, rgba(236, 72, 153, 0.16), transparent 28%),
-    #f7f8fa;
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 30%),
+    #f6f7fb;
+}
+
+.mine-header {
+  position: relative;
+  padding-top: 26px;
+}
+
+.header-bg {
+  position: absolute;
+  top: 0;
+  left: -14px;
+  right: -14px;
+  height: 210px;
+  border-radius: 0 0 34px 34px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.28), transparent 26%),
+    linear-gradient(135deg, #111827 0%, #2563eb 52%, #22d3ee 100%);
 }
 
 .user-card {
-  margin: 18px 16px;
-  padding: 30px 20px;
-  border-radius: 28px;
-  text-align: center;
+  position: relative;
+  z-index: 1;
+  padding: 18px;
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
   color: #fff;
-  background: linear-gradient(135deg, #111827,  #1f2937,  #f59e0b);
-  box-shadow: 0 16px 38px rgba(245, 158, 11, 0.25);
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16);
 }
 
 .avatar {
-  width: 86px;
-  height: 86px;
-  border-radius: 50%;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
   object-fit: cover;
-  border: 4px solid rgba(255, 255, 255, 0.7);
+  border: 3px solid rgba(255, 255, 255, 0.65);
 }
 
-.username {
-  margin-top: 14px;
-  font-size: 24px;
+.user-info {
+  flex: 1;
+  margin-left: 14px;
+}
+
+.user-info h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
   font-weight: 900;
 }
 
-.login-title {
-  font-size: 25px;
-  font-weight: 900;
-}
-
-.desc {
-  margin-top: 8px;
+.user-info p {
+  margin: 0;
   font-size: 13px;
-  opacity: 0.82;
+  opacity: 0.86;
 }
 
-.login-actions {
-  margin-top: 22px;
-  display: flex;
-  justify-content: center;
-  gap: 14px;
+.edit-btn {
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
 }
 
-.logout-btn {
-  margin-top: 18px;
+.stats-card {
+  position: relative;
+  z-index: 1;
+  margin-top: 14px;
+  padding: 16px 8px;
+  border-radius: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
 }
 
-.stats {
-  display: flex;
-  justify-content: space-around;
-  margin: 0 16px 20px;
-  padding: 18px 0;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
-}
-
-.stats div {
+.stat-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 4px;
 }
 
-.stats strong {
-  font-size: 22px;
+.stat-item strong {
+  font-size: 21px;
   color: #111827;
 }
 
-.stats span {
-  margin-top: 5px;
+.stat-item span {
   font-size: 12px;
   color: #6b7280;
 }
 
-.section-title {
-  padding: 18px 18px 10px;
-  font-size: 19px;
-  font-weight: 900;
-  color: #111827;
-}
-
-.section-header {
-  padding: 20px 18px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.section-header span {
-  font-size: 19px;
-  font-weight: 900;
-  color: #111827;
-}
-
-.auth-box {
-  padding-bottom: 10px;
-}
-
-.auth-title {
-  margin-bottom: 20px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: 900;
-  color: #111827;
-}
-
-.auth-submit {
+.quick-grid {
   margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 }
 
-.auth-switch {
-  margin-top: 16px;
-  text-align: center;
-  font-size: 13px;
-  color: #8b5cf6;
+.quick-card {
+  height: 86px;
+  border-radius: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  transition: all 0.25s ease;
+}
+
+.quick-card:active {
+  transform: scale(0.96);
+}
+
+.quick-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.quick-card span {
+  font-size: 12px;
+  color: #111827;
   font-weight: 700;
 }
-.logout-btn {
+
+.mine-panel {
   margin-top: 18px;
-  background: #ffffff !important;
-  color: #111827 !important;
-  border: none !important;
+  padding: 8px 0;
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.06);
+}
+
+.panel-title {
+  padding: 10px 16px 6px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.mine-panel :deep(.van-cell) {
+  background: transparent;
+}
+
+.mine-panel :deep(.van-cell__title) {
   font-weight: 700;
-  padding: 0 18px;
+}
+
+.mine-panel :deep(.van-cell__label) {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.danger-panel :deep(.van-cell__title) {
+  color: #ef4444;
+}
+
+:global(html.dark) .mine-page {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.2), transparent 30%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 30%),
+    #0f172a;
+}
+
+:global(html.dark) .stats-card,
+:global(html.dark) .quick-card,
+:global(html.dark) .mine-panel {
+  background: rgba(30, 41, 59, 0.86);
+}
+
+:global(html.dark) .stat-item strong,
+:global(html.dark) .quick-card span,
+:global(html.dark) .panel-title {
+  color: #f8fafc;
+}
+
+:global(html.dark) .stat-item span,
+:global(html.dark) .mine-panel :deep(.van-cell__label) {
+  color: #94a3b8;
+}
+
+:global(html.dark) .mine-panel :deep(.van-cell__title) {
+  color: #f8fafc;
 }
 </style>

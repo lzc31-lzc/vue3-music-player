@@ -1,13 +1,15 @@
 <template>
-  <div class="home">
-    <div class="hero">
+  <div class="page home-page">
+    <section class="home-hero">
       <div class="hero-top">
         <div>
-          <div class="hello">Hi，欢迎回来</div>
-          <div class="subtitle">发现今天适合你的音乐</div>
+          <p class="hello">{{ greeting }}</p>
+          <h1>发现今天适合你的音乐</h1>
         </div>
 
-        <van-icon name="bell" size="24" />
+        <div class="notice-btn">
+          <van-icon name="bell" size="22" />
+        </div>
       </div>
 
       <van-search
@@ -15,103 +17,115 @@
         placeholder="搜索歌曲 / 歌手"
         shape="round"
         background="transparent"
-        @search="goSearch"
+        @search="handleSearch"
       />
 
       <div class="daily-card">
         <div>
-          <div class="daily-label">Daily Mix</div>
-          <div class="daily-title">今日私人推荐</div>
-          <div class="daily-desc">根据你的播放喜好生成</div>
+          <p>Daily Mix</p>
+          <h2>今日私人推荐</h2>
+          <span>根据你的播放喜好生成</span>
         </div>
 
-        <van-button round size="small" color="linear-gradient(135deg,#8b5cf6,#ec4899)" @click="goSongList">
+        <van-button round size="small" class="play-btn" @click="playDaily">
           立即播放
         </van-button>
       </div>
-    </div>
+    </section>
 
-    <div class="section-header">
-      <span>热门榜单</span>
-      <small>更多</small>
-    </div>
-
-    <div class="rank-list">
-      <div
-        v-for="item in ranks"
-        :key="item.id"
-        class="rank-card"
-        @click="goSongList"
-      >
-        <div class="rank-info">
-          <div class="rank-title">{{ item.title }}</div>
-          <div class="rank-desc">{{ item.desc }}</div>
-        </div>
-        <img :src="item.cover" />
+    <section class="section-block">
+      <div class="section-title">
+        <h2>热门榜单</h2>
+        <span>更多</span>
       </div>
-    </div>
 
-    <div class="section-header">
-      <span>推荐歌单</span>
-      <small>换一批</small>
-    </div>
-
-    <div class="playlist">
-      <div
-        v-for="item in playList"
-        :key="item.id"
-        class="playlist-card"
-        @click="goSongList"
-      >
-        <div class="cover-wrap">
+      <div class="rank-list">
+        <div
+          v-for="item in ranks"
+          :key="item.id"
+          class="rank-card card-hover"
+          @click="goSongList(item.title)"
+        >
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.desc }}</p>
+          </div>
           <img :src="item.cover" />
-          <div class="play-count">
-            <van-icon name="play-circle-o" />
-            {{ item.count }}
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-title">
+        <h2>推荐歌单</h2>
+        <span @click="changePlaylists">换一批</span>
+      </div>
+
+      <div class="playlist-grid">
+        <div
+          v-for="item in playlists"
+          :key="item.id"
+          class="playlist-card card-hover"
+          @click="goSongList(item.title)"
+        >
+          <div class="cover-wrap">
+            <img :src="item.cover" />
+            <span class="play-count">
+              <van-icon name="play-circle-o" />
+              {{ item.count }}
+            </span>
+          </div>
+          <div class="playlist-info">
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.desc }}</p>
           </div>
         </div>
-
-        <div class="playlist-title">{{ item.title }}</div>
       </div>
-    </div>
+    </section>
 
-    <div class="section-header">
-      <span>热门歌曲</span>
-      <small>播放全部</small>
-    </div>
+    <section class="section-block">
+      <div class="section-title">
+        <h2>热门歌曲</h2>
+        <span @click="playAll">播放全部</span>
+      </div>
 
-    <van-cell-group inset class="hot-group">
-      <van-cell
-        v-for="(song, index) in hotSongs"
-        :key="song.id"
-        is-link
-        @click="goPlay(song)"
-      >
-        <template #icon>
-          <div class="song-index">{{ index + 1 }}</div>
-        </template>
-
-        <template #title>
-          <div class="hot-title">{{ song.name }}</div>
-        </template>
-
-        <template #label>
-          <div class="hot-singer">{{ song.singer }}</div>
-        </template>
-      </van-cell>
-    </van-cell-group>
+      <van-cell-group inset class="song-panel">
+        <van-cell
+          v-for="(song, index) in hotSongs"
+          :key="song.id"
+          :title="song.name"
+          :label="song.singer"
+          is-link
+          @click="playSong(song)"
+        >
+          <template #icon>
+            <div class="song-index">{{ index + 1 }}</div>
+          </template>
+        </van-cell>
+      </van-cell-group>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePlayerStore } from '../store/Player'
+import { showToast } from 'vant'
+import { usePlayerStore } from '../store/player'
 
 const router = useRouter()
 const player = usePlayerStore()
 
 const keyword = ref('')
+
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+
+  if (hour < 6) return '夜深了，听点轻音乐吧'
+  if (hour < 12) return '早上好，欢迎回来'
+  if (hour < 18) return '下午好，欢迎回来'
+  return '晚上好，欢迎回来'
+})
 
 const ranks = ref([
   {
@@ -134,40 +148,64 @@ const ranks = ref([
   }
 ])
 
-const playList = ref([
+const playlists = ref([
   {
     id: 1,
     title: '深夜情绪馆',
-    cover: 'https://picsum.photos/300/300?random=1',
+    desc: '适合一个人安静听',
+    cover: 'https://picsum.photos/600/320?random=1',
     count: '32万'
   },
   {
     id: 2,
     title: '学习专注BGM',
-    cover: 'https://picsum.photos/300/300?random=2',
+    desc: '沉浸式学习音乐',
+    cover: 'https://picsum.photos/600/320?random=2',
     count: '18万'
   },
   {
     id: 3,
     title: '华语流行精选',
-    cover: 'https://picsum.photos/300/300?random=3',
+    desc: '循环播放也不腻',
+    cover: 'https://picsum.photos/600/320?random=3',
     count: '56万'
   },
   {
     id: 4,
     title: '城市夜跑节奏',
-    cover: 'https://picsum.photos/300/300?random=4',
+    desc: '跑步通勤都适合',
+    cover: 'https://picsum.photos/600/320?random=4',
     count: '12万'
   }
 ])
 
 const hotSongs = ref([
-  { id: 1, name: '晴天', singer: '周杰伦' },
-  { id: 2, name: '夜曲', singer: '周杰伦' },
-  { id: 3, name: '稻香', singer: '周杰伦' }
+  {
+    id: 1,
+    name: '晴天',
+    singer: '周杰伦',
+    cover: 'https://picsum.photos/300/300?random=11'
+  },
+  {
+    id: 2,
+    name: '夜曲',
+    singer: '周杰伦',
+    cover: 'https://picsum.photos/300/300?random=12'
+  },
+  {
+    id: 3,
+    name: '稻香',
+    singer: '周杰伦',
+    cover: 'https://picsum.photos/300/300?random=13'
+  }
 ])
 
-const goSearch = () => {
+const handleSearch = () => {
+  if (!keyword.value.trim()) {
+    showToast('请输入搜索内容')
+    return
+  }
+
   router.push({
     path: '/songlist',
     query: {
@@ -176,222 +214,313 @@ const goSearch = () => {
   })
 }
 
-const goSongList = () => {
-  router.push('/songlist')
+const goSongList = (title) => {
+  router.push({
+    path: '/songlist',
+    query: {
+      title
+    }
+  })
 }
 
-const goPlay = async (song) => {
-  if (player.songList.length === 0) {
-    await player.loadSongList()
-  }
-
-  const target = player.songList.find(item => item.id === song.id)
-
-  if (target) {
-    player.setCurrentSong(target)
-    player.pause()
-    router.push('/play')
-  }
+const playSong = (song) => {
+  player.setCurrentSong(song)
+  router.push('/play')
 }
 
-onMounted(() => {
-  if (player.songList.length === 0) {
-    player.loadSongList()
-  }
-})
+const playDaily = () => {
+  playSong(hotSongs.value[0])
+}
+
+const playAll = () => {
+  playDaily()
+}
+
+const changePlaylists = () => {
+  playlists.value = [...playlists.value].reverse()
+  showToast('已换一批')
+}
 </script>
 
 <style scoped>
-.home {
+.home-page {
   min-height: 100vh;
-  padding-bottom: 130px;
+  padding-bottom: 88px;
   background:
-    radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.18), transparent 28%),
-    radial-gradient(circle at 90% 0%, rgba(236, 72, 153, 0.16), transparent 28%),
-    #f7f8fa;
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 30%),
+    #f6f7fb;
 }
 
-.hero {
-  padding: 20px 16px 18px;
-  border-radius: 0 0 30px 30px;
-  background: linear-gradient(135deg,  #0f172a,  #2563eb, #38bdf8);
+.home-hero {
+  position: relative;
+  padding: 26px 14px 18px;
+  border-radius: 0 0 32px 32px;
   color: #fff;
-  box-shadow: 0 14px 35px rgba(79, 70, 229, 0.28);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.25), transparent 26%),
+    linear-gradient(135deg, #111827 0%, #2563eb 52%, #22d3ee 100%);
+}
+
+.home-hero::after {
+  content: "";
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  top: -80px;
+  right: -70px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .hero-top {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
 }
 
 .hello {
-  font-size: 24px;
+  margin: 0 0 6px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.hero-top h1 {
+  margin: 0;
+  font-size: 25px;
   font-weight: 900;
 }
 
-.subtitle {
-  margin-top: 6px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.75);
+.notice-btn {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .daily-card {
-  margin-top: 14px;
+  position: relative;
+  z-index: 1;
+  margin-top: 18px;
   padding: 18px;
   border-radius: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.24), rgba(255,255,255,.08));
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,.18);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
-.daily-label {
+.daily-card p,
+.daily-card h2,
+.daily-card span {
+  margin: 0;
+}
+
+.daily-card p {
   font-size: 12px;
-  opacity: .75;
+  opacity: 0.78;
 }
 
-.daily-title {
-  margin-top: 4px;
+.daily-card h2 {
+  margin: 6px 0;
   font-size: 22px;
   font-weight: 900;
 }
 
-.daily-desc {
-  margin-top: 6px;
+.daily-card span {
   font-size: 12px;
-  opacity: .72;
+  opacity: 0.82;
 }
 
-.section-header {
+.play-btn {
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+}
+
+.section-block {
+  margin-top: 22px;
+}
+
+.section-title {
+  padding: 0 14px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 22px 16px 12px;
 }
 
-.section-header span {
+.section-title h2 {
+  margin: 0;
   font-size: 20px;
   font-weight: 900;
   color: #111827;
 }
 
-.section-header small {
-  color: #8b5cf6;
+.section-title span {
+  font-size: 13px;
+  color: #7c3aed;
   font-weight: 700;
 }
 
 .rank-list {
-  display: flex;
+  padding: 0 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  padding: 0 16px;
-  overflow-x: auto;
-}
-
-.rank-list::-webkit-scrollbar {
-  display: none;
 }
 
 .rank-card {
-  min-width: 210px;
   padding: 14px;
-  border-radius: 22px;
+  border-radius: 20px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  background: #fff;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  align-items: center;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
 }
 
-.rank-title {
-  font-size: 17px;
-  font-weight: 900;
+.rank-card h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
   color: #111827;
 }
 
-.rank-desc {
-  margin-top: 6px;
+.rank-card p {
+  margin: 0;
   font-size: 12px;
   color: #6b7280;
 }
 
 .rank-card img {
-  width: 66px;
-  height: 66px;
-  border-radius: 18px;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
   object-fit: cover;
 }
 
-.playlist {
+.playlist-grid {
+  padding: 0 14px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
-  padding: 0 16px;
 }
 
 .playlist-card {
-  border-radius: 22px;
-  background: #fff;
   overflow: hidden;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.06);
 }
 
 .cover-wrap {
   position: relative;
+  height: 132px;
+  overflow: hidden;
 }
 
 .cover-wrap img {
   width: 100%;
-  height: 145px;
-  object-fit: cover;
+  height: 100%;
   display: block;
+  object-fit: cover;
 }
 
 .play-count {
   position: absolute;
-  right: 8px;
-  top: 8px;
-  padding: 4px 8px;
+  top: 10px;
+  right: 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 12px;
   color: #fff;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(8px);
+  font-size: 12px;
+  background: rgba(15, 23, 42, 0.58);
 }
 
-.playlist-title {
+.playlist-info {
   padding: 12px;
+}
+
+.playlist-info h3 {
+  margin: 0 0 5px;
   font-size: 15px;
-  font-weight: 800;
   color: #111827;
 }
 
-.hot-group {
-  margin-bottom: 20px;
+.playlist-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.song-panel {
+  overflow: hidden;
+  border-radius: 22px;
+  box-shadow: 0 16px 42px rgba(15, 23, 42, 0.06);
+}
+
+.song-panel :deep(.van-cell) {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.song-panel :deep(.van-cell__title) {
+  font-weight: 700;
 }
 
 .song-index {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   margin-right: 8px;
   border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8b5cf6;
+  display: grid;
+  place-items: center;
   font-weight: 900;
-  background: rgba(139, 92, 246, 0.1);
+  color: #2563eb;
+  background: #eff6ff;
 }
 
-.hot-title {
-  font-weight: 800;
+.card-hover {
+  transition: all 0.25s ease;
 }
 
-.hot-singer {
-  color: #6b7280;
+.card-hover:active {
+  transform: scale(0.97);
+}
+
+:global(html.dark) .home-page {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.2), transparent 30%),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.18), transparent 30%),
+    #0f172a;
+}
+
+:global(html.dark) .section-title h2,
+:global(html.dark) .rank-card h3,
+:global(html.dark) .playlist-info h3 {
+  color: #f8fafc;
+}
+
+:global(html.dark) .rank-card,
+:global(html.dark) .playlist-card,
+:global(html.dark) .song-panel :deep(.van-cell) {
+  background: rgba(30, 41, 59, 0.86);
+}
+
+:global(html.dark) .rank-card p,
+:global(html.dark) .playlist-info p {
+  color: #94a3b8;
 }
 </style>
