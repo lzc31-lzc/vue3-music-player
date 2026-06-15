@@ -34,15 +34,15 @@
 
       <div class="stats-card">
         <div class="stat-item">
-          <strong>{{ isLogin ? user.favoriteCount : 0 }}</strong>
+          <strong>{{ isLogin ? player.favoriteList.length : 0 }}</strong>
           <span>收藏</span>
         </div>
         <div class="stat-item">
-          <strong>{{ isLogin ? user.historyCount : 0 }}</strong>
+          <strong>{{ isLogin ? player.historyList.length : 0 }}</strong>
           <span>播放</span>
         </div>
         <div class="stat-item">
-          <strong>{{ isLogin ? user.playlistCount : 0 }}</strong>
+          <strong>{{ isLogin ? myPlaylist.length : 0 }}</strong>
           <span>歌单</span>
         </div>
       </div>
@@ -65,9 +65,9 @@
     <section class="mine-panel">
       <div class="panel-title">我的音乐</div>
 
-      <van-cell title="我的收藏" label="喜欢的歌曲都在这里" icon="like-o" is-link @click="needLogin('我的收藏')" />
-      <van-cell title="播放历史" label="查看最近播放记录" icon="clock-o" is-link @click="needLogin('播放历史')" />
-      <van-cell title="我的歌单" label="管理创建和收藏的歌单" icon="music-o" is-link @click="needLogin('我的歌单')" />
+      <van-cell title="我的收藏" label="喜欢的歌曲都在这里" icon="like-o" is-link @click="openDetail('我的收藏')" />
+      <van-cell title="播放历史" label="查看最近播放记录" icon="clock-o" is-link @click="openDetail('播放历史')" />
+      <van-cell title="我的歌单" label="管理创建和收藏的歌单" icon="music-o" is-link @click="openDetail('我的歌单')" />
     </section>
 
     <section class="mine-panel">
@@ -119,12 +119,65 @@
         </div>
       </div>
     </van-popup>
+
+    <van-popup v-model:show="showDetail" round position="bottom">
+      <div class="detail-box">
+        <h2>{{ detailTitle }}</h2>
+
+        <template v-if="detailTitle === '我的收藏'">
+          <van-empty v-if="player.favoriteList.length === 0" description="暂无收藏歌曲" />
+
+          <van-cell
+            v-for="song in player.favoriteList"
+            :key="song.id"
+            :title="song.name"
+            :label="song.singer"
+            icon="like-o"
+            is-link
+            @click="playSong(song)"
+          />
+        </template>
+
+        <template v-if="detailTitle === '播放历史'">
+          <van-empty v-if="player.historyList.length === 0" description="暂无播放历史" />
+
+          <van-cell
+            v-for="song in player.historyList"
+            :key="song.id"
+            :title="song.name"
+            :label="song.singer"
+            icon="clock-o"
+            is-link
+            @click="playSong(song)"
+          />
+        </template>
+
+        <template v-if="detailTitle === '我的歌单'">
+          <div
+            v-for="item in myPlaylist"
+            :key="item.id"
+            class="playlist-item"
+          >
+            <img :src="item.cover" />
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.count }} 首歌曲</p>
+            </div>
+          </div>
+        </template>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
+import { usePlayerStore } from '../store/Player'
+
+const router = useRouter()
+const player = usePlayerStore()
 
 const defaultAvatar = 'https://picsum.photos/200/200?random=66'
 
@@ -139,6 +192,8 @@ const user = ref({
 
 const isLogin = ref(false)
 const showLogin = ref(false)
+const showDetail = ref(false)
+const detailTitle = ref('')
 const authMode = ref('login')
 const darkMode = ref(false)
 
@@ -153,6 +208,21 @@ const quickList = ref([
   { title: '历史', icon: 'clock-o' },
   { title: '下载', icon: 'down' },
   { title: '歌单', icon: 'music-o' }
+])
+
+const myPlaylist = ref([
+  {
+    id: 1,
+    title: '我喜欢的音乐',
+    count: player.favoriteList.length,
+    cover: 'https://picsum.photos/200/200?random=21'
+  },
+  {
+    id: 2,
+    title: '最近常听',
+    count: player.historyList.length,
+    cover: 'https://picsum.photos/200/200?random=22'
+  }
 ])
 
 onMounted(() => {
@@ -170,6 +240,10 @@ onMounted(() => {
   if (localTheme === 'dark') {
     darkMode.value = true
     document.documentElement.classList.add('dark')
+  }
+
+  if (player.songList.length === 0) {
+    player.loadSongList()
   }
 })
 
@@ -228,6 +302,7 @@ const submitAuth = () => {
   }
 
   localStorage.setItem('music_login_user', JSON.stringify(account))
+
   user.value = {
     ...user.value,
     ...account
@@ -238,18 +313,29 @@ const submitAuth = () => {
   showToast('登录成功')
 }
 
-const needLogin = (text) => {
+const openDetail = (title) => {
   if (!isLogin.value) {
     showToast('请先登录')
     showLogin.value = true
     return
   }
 
-  showToast(text)
+  detailTitle.value = title
+  showDetail.value = true
 }
 
 const handleQuick = (item) => {
-  needLogin(item.title)
+  if (item.title === '收藏') openDetail('我的收藏')
+  else if (item.title === '历史') openDetail('播放历史')
+  else if (item.title === '歌单') openDetail('我的歌单')
+  else showToast('下载功能开发中')
+}
+
+const playSong = (song) => {
+  player.setCurrentSong(song)
+  player.pause()
+  showDetail.value = false
+  router.push('/play')
 }
 
 const editUser = () => {
@@ -486,6 +572,46 @@ const logout = async () => {
 
 .auth-switch b {
   color: #2563eb;
+}
+
+.detail-box {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 24px 18px 32px;
+}
+
+.detail-box h2 {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: #f7f8fa;
+}
+
+.playlist-item img {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+.playlist-item h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.playlist-item p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #6b7280;
 }
 
 :global(html.dark) .mine-page {
